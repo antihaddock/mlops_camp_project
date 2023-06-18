@@ -4,25 +4,26 @@ services:
     build:
       context: ./mlflow_docker
       dockerfile: Dockerfile
+    container_name: mlflow-container
     ports:
       - 8000:8000
     environment:                            
-      - AWS_ACCESS_KEY_ID=****
-      - AWS_SECRET_ACCESS_KEY=***
-      - AWS_DEFAULT_REGION=****
-    command: mlflow server --default-artifact-root s3://mlopsbucketantihaddock --host 0.0.0.0 --port 8000
+      - AWS_ACCESS_KEY_ID=${aws_access_key_id}
+      - AWS_SECRET_ACCESS_KEY=${aws_secret_access_key}
+      - AWS_DEFAULT_REGION=${region}
     networks:
       - mynetwork
   flaskapp:
     build:
-      context: ./flask_docker
+      context: ../
       dockerfile: Dockerfile
+    container_name: flask-container
     ports:
       - 5000:5000
     environment:                            
-      - AWS_ACCESS_KEY_ID=***
-      - AWS_SECRET_ACCESS_KEY=***
-      - AWS_DEFAULT_REGION=***
+      - AWS_ACCESS_KEY_ID=${aws_access_key_id}
+      - AWS_SECRET_ACCESS_KEY=${aws_secret_access_key}
+      - AWS_DEFAULT_REGION=${region}
     networks:
       - mynetwork
 

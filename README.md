@@ -31,7 +31,7 @@ The flask app searches the Mlflow server to retrieve the model with the highest 
 # Infastructure creation
 Terraform is used to create all infastructure for this project. Terraform code can be found in the `infastructure` directory. It is used to create the S3 bucket and elastic beanstalk instances to which the docker containers are deployed
 
-A visual representation of the infastructure can be seen here !<img src="./MLOps Workflow.png" title="Repo Layout">
+A visual representation of the infastructure can be seen here: <img src="./MLOps Workflow.png" title="Repo Layout">
 # Orchestration
 Prefect is used as the orchestration platform for the repo and is programmed to run `./model/train.py` daily to ensure the most up to date model is available for deployment.
 

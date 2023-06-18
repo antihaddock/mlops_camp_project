@@ -15,6 +15,7 @@ scipy = "==1.10.1"
 seaborn = "==0.12.2"
 xgboost = "==1.7.5"
 prefect = "==2.10.12"
+boto3 = "==1.26.147"
 
 [dev-packages]
 

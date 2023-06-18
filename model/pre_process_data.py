@@ -64,20 +64,24 @@ def best_model(experiment_name):
     model: Loads the model with the best AUC value saved into MLflow for use
     """
     #for local user
-    tracking_uri = 'http://127.0.0.1:8000'
+    # tracking_uri = 'http://127.0.0.1:8000'
     # for using only the flask app and the mlflow server running locally
     #tracking_uri =  'http://host.docker.internal:8000'
     # for docker-compose use
-    #tracking_uri = 'http://mlflow:8000'
+    tracking_uri = 'http://mlflow-container:8000'
     mlflow.set_tracking_uri(tracking_uri)
     experiment_id = mlflow.get_experiment_by_name(experiment_name).experiment_id
     runs = mlflow.search_runs(experiment_ids=[experiment_id])
+    # make sure it isnt a failed run
+    runs = runs[runs['status'] != 'FAILED']
     # Filter the runs based on the specified run_name
     best_run = runs.loc[runs['metrics.auc_score'].idxmax()]
     # Get the artifact URI for the best run
     artifact_uri = best_run['artifact_uri']
-
     # Load the model using the artifact URI
     model = mlflow.sklearn.load_model(artifact_uri + "/model")
-
+    
+    # Register the model for use
+    mlflow.register_model(model_uri=f"runs:/{artifact_uri}/models",  name='hospital_length_of_stay-classifier')
+    
     return model
