@@ -1,58 +1,48 @@
-terraform {
-  required_version = ">= 1.0"
-  backend "local" {}  # Can change from "local" to "gcs" (for google) or "s3" (for aws), if you would like to preserve your tf-state online
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-    }
-  }
-}
+# provider "aws" {
+#   region = "ap-southeast-2"  # Replace with your desired AWS region
+# }
 
-provider "google" {
-  project = var.project
-  region = var.region
-  // credentials = file(var.credentials)  # Use this if you do not want to set env-var GOOGLE_APPLICATION_CREDENTIALS
-}
+# resource "aws_s3_bucket" "mlopsbucket" {
+#   bucket = "mlopsbucketantihaddock"  # Replace with your desired bucket name
+# }
 
-# Data Lake Bucket
-# Ref: https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket
-resource "google_storage_bucket" "data-lake-bucket" {
-  name          = "engineering_project_bucket"
-  location      = var.region
-  project       = var.project
+# resource "aws_elastic_beanstalk_application" "example_app" {
+#   name        = "predictionapp"  # Replace with your desired application name
+#   description = "MLOPs project app"
+# }
 
-  # Optional, but recommended settings:
-  storage_class = var.storage_class
-  uniform_bucket_level_access = true
+# resource "aws_elastic_beanstalk_environment" "example_env" {
+#   name                = "example-env"  # Replace with your desired environment name
+#   application         = aws_elastic_beanstalk_application.example_app.name
+#   solution_stack_name = "64bit Amazon Linux 2 v3.4.5 running Docker"  # Change to Docker stack
 
-  versioning {
-    enabled     = true
-  }
+#   setting {
+#     namespace = "aws:autoscaling:launchconfiguration"
+#     name      = "InstanceType"
+#     value     = "t3.micro"  # Replace with your desired EC2 instance type
+#   }
 
-  lifecycle_rule {
-    action {
-      type = "Delete"
-    }
-    condition {
-      age = 30  // days
-    }
-  }
+#   setting {
+#     namespace = "aws:elasticbeanstalk:environment"
+#     name      = "EnvironmentType"
+#     value     = "SingleInstance"
+#   }
 
-  force_destroy = true
-}
+#   setting {
+#     namespace = "aws:elasticbeanstalk:environment"
+#     name      = "ServiceRole"
+#     value     = "aws-elasticbeanstalk-service-role"
+#   }
 
-# Setting up a BigQuery Datasets
-# Ref: https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/bigquery_dataset
-#setup the raw dataset
-resource "google_bigquery_dataset" "dataset_1" {
-  dataset_id = var.BQ_DATASET_1
-  project    = var.project
-  location   = var.region
-}
+#   setting {
+#     namespace = "aws:elasticbeanstalk:application:environment"
+#     name      = "AWS_CONTAINER_LOGGING_ENABLED"
+#     value     = "false"  # Set to "true" if you want AWS to collect logs from the container
+#   }
 
-# Setup the transformed dataset
-resource "google_bigquery_dataset" "dataset_2" {
-  dataset_id = var.BQ_DATASET_2
-  project    = var.project
-  location   = var.region
-}
+#   setting {
+#     namespace = "aws:elasticbeanstalk:application:environment"
+#     name      = "DOCKER_IMAGE"
+#     value     = "<your_docker_image>"  # Replace with the URL of your Docker image
+#   }
+# }

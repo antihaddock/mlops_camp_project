@@ -1,42 +1,35 @@
 # Predict Function for project
 # Takes the pickle file from train.py and utilises this inside a flask server to return a prediction based on data provided to the server
 
-import mlflow
 import pandas as pd
 from flask import Flask, request, jsonify
+from pre_process_data import preprocess, best_model
 
 
+def predict_outcome(df):
+    # import the best model from mlflow
+    model = best_model('HospitalPrediction')
+    # prepocess the df to feed into the model
+    X = preprocess(df)
+    # make predictions and retun class and probability of prediction    
+    y_pred = model.predict(X)
+    y_prob = model.predict_proba(X)
+        
+    return y_pred, y_prob
 
-
-# return the best model stored in mlflow
-def best_model():
-    # search mlflow for best model
-    runs = mlflow.search_runs()
-    # find te best run by auc score
-    best_run = runs.loc[runs['metrics.auc_score'].idxmax()]
-    #return the uri
-    artifact_uri = best_run['artifact_uri']
-
-    # Load the model using the artifact URI
-    model = mlflow.sklearn.load_model(artifact_uri + "/model")
-
-    return model
-
-
-app = Flask('hopsital_stay_prediction')
+app = Flask('hospital_stay_prediction')
 
 
 @app.route('/predict_outcome', methods=['POST'])
-def predict_outcomes():
+def predictions():
     data = request.get_json()
-    #df = pd.read_json(data)
-    prediction, prediction_prob = predict_outcome(data, dv, model)
+    prediction, prediction_prob = predict_outcome(data)
     
     result = {
         'Class': prediction.tolist(),
         'probability': prediction_prob.tolist()
     }
-
+    print(result)
     return jsonify(result)
 
 

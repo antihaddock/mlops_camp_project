@@ -102,43 +102,45 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42, test_
 # these parameters have been found following EDA and modelling in notebook.ipynb
 def train_test_model(model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test):
        
-       tracking_uri = "../mlflow_models/"
-       mlflow.set_tracking_uri(tracking_uri)
-       with mlflow.start_run():
-              mlflow.log_param("model_name", type(model).__name__)
-              model = model
+    #tracking_uri = "../mlflow_models/"
+    tracking_uri = 'http://127.0.0.1:8000' 
+    mlflow.set_tracking_uri(tracking_uri)
+    with mlflow.start_run(run_name='HospitalPrediction'):
+            mlflow.log_param("model_name", type(model).__name__)
+            model = model
 
-              # Fit the model to the training data
-              model.fit(X_train, y_train)
+            # Fit the model to the training data
+            model.fit(X_train, y_train)
 
               # Predict the target variable for the test set
-              y_pred = model.predict(X_test)
+            y_pred = model.predict(X_test)
 
-              # Create and print the confusion matrix
-              cm = confusion_matrix(y_test, y_pred, normalize='true')
-              print("Normalized Confusion Matrix:")
-              print(cm)
+            # Create and print the confusion matrix
+            cm = confusion_matrix(y_test, y_pred, normalize='true')
+            print("Normalized Confusion Matrix:")
+            print(cm)
+ 
+            # Calculate and print the accuracy score
+            accuracy = accuracy_score(y_test, y_pred)
+            mlflow.log_metric("accuracy", accuracy)
+            print("Accuracy:", accuracy)
 
-              # Calculate and print the accuracy score
-              accuracy = accuracy_score(y_test, y_pred)
-              mlflow.log_metric("accuracy", accuracy)
-              print("Accuracy:", accuracy)
+            # Calculate the predicted probabilities and AUC score
+            y_prob = model.predict_proba(X_test)[:, 1]
+            auc_score = roc_auc_score(y_test, y_prob)
+            mlflow.log_metric("auc_score", auc_score)
+            print("AUC Score:", auc_score)
 
-              # Calculate the predicted probabilities and AUC score
-              y_prob = model.predict_proba(X_test)[:, 1]
-              auc_score = roc_auc_score(y_test, y_prob)
-              mlflow.log_metric("auc_score", auc_score)
-              print("AUC Score:", auc_score)
-
-              # Save the model as an artifact
-              mlflow.sklearn.log_model(model, "model")
-       return model
+            # Save the model as an artifact
+            mlflow.sklearn.log_model(model, "model")
+    return model
 
 
 
-# ------------- Export trained model to pickle file -------------------------------------------------------
+# ------------- train models and save them to Mlflow -------------------------------------------------------
 
-models = [LogisticRegression(), RandomForestClassifier(), XGBClassifier()]
+if __name__ == "__main__":
+    models = [LogisticRegression(), RandomForestClassifier(), XGBClassifier()]
 
-for model in models:
-       train_test_model(model)
+    for model in models:
+           train_test_model(model)
