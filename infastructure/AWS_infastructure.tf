@@ -1,10 +1,58 @@
-# provider "aws" {
-#   region = "ap-southeast-2"  # Replace with your desired AWS region
-# }
+terraform {
+  required_providers {
+    dotenv = {
+      source  = "codemountain/dotenv"
+      version = "1.1.0"
+    }
+    aws = {
+      source  = "hashicorp/aws"
+      version = "3.63.0"
+    }
+  }
+}
 
-# resource "aws_s3_bucket" "mlopsbucket" {
-#   bucket = "mlopsbucketantihaddock"  # Replace with your desired bucket name
-# }
+provider "dotenv" {
+  path = "../docker/.env"
+}
+
+data "dotenv" "env" {}
+
+provider "aws" {
+  access_key       = data.dotenv.env.variables.AWS_ACCESS_KEY_ID
+  secret_access_key = data.dotenv.env.variables.AWS_SECRET_ACCESS_KEY
+  region           = data.dotenv.env.variables.AWS_REGION
+}
+
+resource "aws_db_instance" "example" {
+  allocated_storage = 10
+  engine            = "postgres"
+  engine_version    = "13.4"
+  instance_class    = "db.t3.micro"
+  name              = "mydatabase"
+  username          = "myuser"
+  password          = "mypassword"
+}
+
+resource "aws_s3_bucket" "mlopsbucket" {
+  bucket = "mlopsbucketantihaddock"  
+}
+
+output "database_endpoint" {
+  value = aws_db_instance.example.endpoint
+}
+
+output "database_port" {
+  value = aws_db_instance.example.port
+}
+
+output "database_name" {
+  value = aws_db_instance.example.name
+}
+
+output "database_username" {
+  value = aws_db_instance.example.username
+}
+
 
 # resource "aws_elastic_beanstalk_application" "example_app" {
 #   name        = "predictionapp"  # Replace with your desired application name

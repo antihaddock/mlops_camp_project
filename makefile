@@ -1,7 +1,12 @@
-LOCAL_IMAGE_NAME:= mlopcamp_project
+LOCAL_IMAGE_NAME:= mlopscamp_project
 
 test:
 	pytest tests/
+
+infrastructure:
+    terraform init
+    terraform apply -auto-approve
+    terraform output -json > output.json
 
 quality_checks:
 	isort .
@@ -9,13 +14,16 @@ quality_checks:
 	pylint --recursive=y .
 
 build: quality_checks test
-	docker build -t ${LOCAL_IMAGE_NAME} .
+	docker compose build -t ${LOCAL_IMAGE_NAME} --no-cache .
+	
+up: build infrastructure
+	docker compose up 
 
 integration_test: build
-	LOCAL_IMAGE_NAME=${LOCAL_IMAGE_NAME} bash integraton-test/run.sh
+	LOCAL_IMAGE_NAME=${LOCAL_IMAGE_NAME} bash tests/run.sh
 
 publish: build integration_test
-	LOCAL_IMAGE_NAME=${LOCAL_IMAGE_NAME} bash scripts/publish.sh
+	LOCAL_IMAGE_NAME=${LOCAL_IMAGE_NAME} bash //run.sh
 
 setup:
 	pipenv install --dev
