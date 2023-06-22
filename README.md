@@ -40,3 +40,13 @@ Prefect is used as the orchestration platform for the repo and is programmed to 
  A docker-compose is available in the main directory of the repo which contains docker images for a Mlflow server and the custom flask app for serving the ML model. The flask app and Mlflow server are networked together. The flask app searches Mlflow for the most up to date model with each run.
 
 # Model Monitoring
+We utilise evidently for model monitoring. Code related to model monitoring can be found in `./monitoring`
+
+# Best Practices
+For this repo we have applied the following best practices:
+1. Makefile for runing the model
+2. Code format checking utilising code linting
+
+
+# How to run this repo
+In order to run this model you can utilise the makefile located in the root directory of this repo

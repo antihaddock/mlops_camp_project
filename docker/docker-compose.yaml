@@ -1,5 +1,31 @@
 version: '3'
+
 services:
+
+  # The actualy prediction app
+  flaskapp:
+    build:
+      context: ../
+      dockerfile: Dockerfile
+    container_name: flask-container
+    ports:
+      - 5000:5000
+    environment:                            
+      - AWS_ACCESS_KEY_ID=${aws_access_key_id}
+      - AWS_SECRET_ACCESS_KEY=${aws_secret_access_key}
+      - AWS_DEFAULT_REGION=${region}
+      - EVIDENTLY_SERVICE=http://evidently_service.:8085'
+      - MONGODB_ADDRESS='mongodb://mongo.:27017/'
+    networks:
+      - mynetwork
+
+  # All of the support application containers. We need:
+  # 1. Mlflow - model tracking and registry
+  # 2. Evidently - model performance once in production
+  # 3. Prometheus
+  # 4. Grafana - Dashboarding of the model performance
+  # 5. Mongodb - storage of evidently outputs
+
   mlflow:
     build:
       context: ./mlflow_docker
@@ -13,19 +39,53 @@ services:
       - AWS_DEFAULT_REGION=${region}
     networks:
       - mynetwork
-  flaskapp:
+   
+  evidently_service:
     build:
-      context: ../
+      context: ./evidently
       dockerfile: Dockerfile
-    container_name: flask-container
+    depends_on:
+       - grafana
     ports:
-      - 5000:5000
-    environment:                            
-      - AWS_ACCESS_KEY_ID=${aws_access_key_id}
-      - AWS_SECRET_ACCESS_KEY=${aws_secret_access_key}
-      - AWS_DEFAULT_REGION=${region}
+      - "8085:8085"
     networks:
+      - back-tier
+      - front-tier
+
+  prometheus:
+    image: prom/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - "9091:9090"
+    networks:
+      - back-tier
+    restart: always
+
+  grafana:
+    image: grafana/grafana
+    user: "472"
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    networks:
+      - back-tier
+      - front-tier
+    restart: always
+  
+  mongo:
+    image: mongo
+    ports:
+      - "27018:27017"
+    networks:
+      - back-tier
+      - front-tier
       - mynetwork
 
+# The networks we will utilise for the containers
 networks:
   mynetwork:
+  back-tier:
+  front-tier:

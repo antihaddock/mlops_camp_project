@@ -2,8 +2,10 @@
 """
 
 This file will train an a ML Model from several possible model options.
-The script takes data from the directory located at ./data/ and exports the model as a pickle
-to the ./model/ directory for use. The name of the created model is ml-model.bin
+The script takes data from the directory located at ./data/ and utilises Mlflow
+to monitor model training metrics and store model artifacts.
+
+This is optimised to run with prefect to monitor training data and pre processing
 
 """
 import pandas as pd

@@ -3,6 +3,10 @@ LOCAL_IMAGE_NAME:= mlopscamp_project
 test:
 	pytest tests/
 
+setup:
+	pipenv install --dev
+	pre-commit install
+
 infrastructure:
     terraform init
     terraform apply -auto-approve
@@ -25,6 +29,5 @@ integration_test: build
 publish: build integration_test
 	LOCAL_IMAGE_NAME=${LOCAL_IMAGE_NAME} bash //run.sh
 
-setup:
-	pipenv install --dev
-	pre-commit install
+docker_push: up
+	docker push <repository-uri>/<image-name>:<tag>
