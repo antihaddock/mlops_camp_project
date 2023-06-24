@@ -2,31 +2,36 @@ from evidently import ColumnMapping
 from evidently.report import Report
 from evidently.metrics import ColumnDriftMetric, DatasetDriftMetric, DatasetMissingValuesMetric
 
-colum_mapping = ColumnMapping(
-    target = None,
-    prediction = 'prediction',
-    numerical_features = num_features,
-    categorical_features = cat_features
-)
 
-report = Report(metrics=[
-    ColumnDriftMetric(column_name='prediction'),
-    DatasetDriftMetric(),
-    DatasetMissingValuesMetric()
-])
 
-report.run(reference_data=train_data, current_data=val_data, column_mapping=column_mapping)
+def create_evidently_report(prediction, num_features, cat_features):
+    colum_mapping = ColumnMapping(
+        target = None,
+        prediction = prediction,
+        numerical_features = num_features,
+        categorical_features = cat_features
+    )
 
-report.show(mode='inline')
+    report = Report(metrics=[
+        ColumnDriftMetric(column_name=prediction),
+        DatasetDriftMetric(),
+        DatasetMissingValuesMetric()
+    ])
 
-result = report.as_dict()
+    report.run(reference_data=train_data, current_data=val_data, column_mapping=column_mapping)
 
-# prediction drift off dictionary
-result['metrics'][0]['result']['drift_score']
+    report.show(mode='inline')
 
-# number of drifed columns
-result['metrics'][1]['result']['number_of_drifted_columns']
+    result = report.as_dict()
 
-# share of missing values
-result['metrics'][1]['result']['current']['share_of_missing_values']
+    # prediction drift off dictionary
+    result['metrics'][0]['result']['drift_score']
+
+    # number of drifed columns
+    result['metrics'][1]['result']['number_of_drifted_columns']
+
+    # share of missing values
+    result['metrics'][1]['result']['current']['share_of_missing_values']
+    
+    return report
 

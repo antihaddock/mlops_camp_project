@@ -4,21 +4,15 @@
 import pandas as pd
 from flask import Flask, request, jsonify
 from pre_process_data import preprocess, best_model
-from pymongo import MongoClient
+from config_db import credentials, insert_metrics_to_db, prep_db, calculate_evidently_metrics, check_metric_retrain
 
-EVIDENTLY_SERVICE_ADDRESS = 'http://127.0.0.1:5000' 
-MONGODB_ADDRESS = "mongodb://127.0.0.1:27017"
-mongo_client = MongoClient(MONGODB_ADDRESS)
-db = mongo_client.get_database("prediction_service")
-collection = db.get_collection("data")
 
 # Helper functions to run the flask app
 # 1. predict_outcome - loads and registers best model from mlflow and makes
 #    a prediction on incoming data
-# 2. save_to_db - Saves the predictions to a database for monitoring of model
-#    performance
-# 3. send_to_evidently_service - sends prediction results to evidently server
-#    for model monitoring
+# 2. log_model_performace - Saves the predictions to a database for monitoring of model
+#    performance along with the input data
+
 
 def predict_outcome(df):
     # import the best model from mlflow
@@ -31,16 +25,16 @@ def predict_outcome(df):
         
     return y_pred, y_prob
 
-def save_to_db(record, prediction):
-    result = record.copy()
-    collection.insert_one(result)
-
-def send_to_evidently_service(record, prediction):
-    rec = record.copy()
-    rec['prediction'] = prediction
-    requests.post(f"{EVIDENTLY_SERVICE_ADDRESS}/iterate/taxi", json=[rec])
-  
-  
+def log_model_performance(df, prediction):
+    db_user = db_user
+    db_password = db_password
+    db_host = db_host
+    db_port = db_port
+    db_name = db_name
+       
+    credentials = credentials(db_user, db_password, db_host, db_port, db_name)
+    prep_db(credentials)
+    insert_metrics_to_db(df, prediction, credentials)
     
 # The flask app and flask main function
 app = Flask('hospital_stay_prediction')
@@ -55,7 +49,9 @@ def predictions():
         'probability': prediction_prob.tolist()
     }
     print(result)
-    save_to_db(result)
+    log_model_performance(data, prediction)
+    calculate_evidently_metrics(data, prediction)
+    #check_metric_retrain()
     
     return jsonify(result)
 

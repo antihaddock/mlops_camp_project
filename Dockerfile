@@ -10,6 +10,8 @@ RUN pipenv install --system --deploy
 
 COPY ["./model/predict.py", "./"] 
 
+COPY ["./model/config_db.py", "./"] 
+
 COPY ["./model/pre_process_data.py", "./"] 
 
 EXPOSE 5000
