@@ -18,7 +18,7 @@ quality_checks:
 	pylint --recursive=y .
 
 build: quality_checks test
-	docker compose build -t ${LOCAL_IMAGE_NAME} --no-cache .
+	docker compose build -t ${LOCAL_IMAGE_NAME} --no-cache 
 	
 up: build infrastructure
 	docker compose up 
