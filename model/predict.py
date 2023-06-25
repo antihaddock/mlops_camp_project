@@ -26,15 +26,18 @@ def predict_outcome(df):
     return y_pred, y_prob
 
 def log_model_performance(df, prediction):
-    db_user = db_user
-    db_password = db_password
-    db_host = db_host
-    db_port = db_port
-    db_name = db_name
+    db_user = 'user1'
+    db_password = 'password1'
+    db_host = 'postgres'
+    db_port = 5432
+    db_name = 'postgres1'
+    table_name = 'model_metrics'
        
-    credentials = credentials(db_user, db_password, db_host, db_port, db_name)
-    prep_db(credentials)
-    insert_metrics_to_db(df, prediction, credentials)
+    prep_db()
+    df = preprocess(df)
+    insert_metrics_to_db(df, prediction, table_name, db_host, db_name, db_user, db_password)
+    calculate_evidently_metrics(df, prediction)
+    #check_metric_retrain()
     
 # The flask app and flask main function
 app = Flask('hospital_stay_prediction')
@@ -50,8 +53,7 @@ def predictions():
     }
     print(result)
     log_model_performance(data, prediction)
-    calculate_evidently_metrics(data, prediction)
-    #check_metric_retrain()
+    
     
     return jsonify(result)
 

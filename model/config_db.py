@@ -1,7 +1,9 @@
 
-import datetime
+from datetime import datetime
 import pandas as pd
 from sqlalchemy import create_engine
+import psycopg2
+from pre_process_data import preprocess
 from evidently.report import Report
 from evidently import ColumnMapping
 from evidently.metrics import ColumnDriftMetric, DatasetDriftMetric, DatasetMissingValuesMetric
@@ -21,17 +23,11 @@ def credentials(db_user, db_password, db_host, db_port, db_name):
     Returns:
         credentials: a string for connecting to the db
     """
-    db_user = db_user
-    db_password = db_password
-    db_host = db_host
-    db_port = db_port
-    db_name = db_name
-
     credentials = f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
     
     return credentials
 
-def prep_db(credentials):
+def prep_db():
     """
     Creates a table to store the model metrics if it does not exist and a table for 
     evidently reports if it does not alredy exist
@@ -42,64 +38,109 @@ def prep_db(credentials):
     Returns:
         null
     """
-    # Define your PostgreSQL connection details
+    # Define your PostgreSQL connection details   
     create_metrics_table_query = """
-        create table if not exists model_metrics(
-            Hospital_code integer,
-            Hospital_type_code varchar,
-            City_Code_Hospital integer,
-            Hospital_region_code  varchar,
-            Availabl_Extra_Rooms_in_Hospital integer,
-            Department varchar,
-            Ward_Type varchar,
-            Ward_Facility_Code varchar,
-            Bed_Grade integer,
-            patientid integer,
-            City_Code_Patient integer,
-            Type_of_Admission varchar,
-            Severity_of_Illness varchar,
-            Visitors_with_Patient integer,
-            Age varchar,
-            Admission_Deposit integer,
-            Stay varchar,
-            prediction integer,
-            generated_at timestamp
-        )
-    """
+      CREATE TABLE IF NOT EXISTS model_metrics (
+            Hospital_code INTEGER,
+            Hospital_type_code INTEGER,
+            City_Code_Hospital INTEGER,
+            Hospital_region_code INTEGER,
+            Available_Extra_Rooms_in_Hospital INTEGER,
+            Department INTEGER,
+            Ward_Type INTEGER,
+            Ward_Facility_Code INTEGER,
+            Bed_Grade INTEGER,
+            patientid INTEGER,
+            City_Code_Patient INTEGER,
+            Type_of_Admission INTEGER,
+            Severity_of_Illness  INTEGER,
+            Visitors_with_Patient INTEGER,
+            Age INTEGER,
+            Admission_Deposit INTEGER,
+            hosp_patient_same INTEGER,
+            Gender INTEGER,
+            Num_hospitals INTEGER,
+            unique_hospital_visited INTEGER,
+            prediction INTEGER
+            )
+        """
+        
     create_evidently_report_table_query = """
         create table if not exists evidently_report(
             prediction_drift integer,
             num_drifted_columns integer,
-            share_missing_values integer,
-            generated_at timestamp
+            share_missing_values integer
+           
         )
     
     """
+
+    # Establish a connection to the PostgreSQL database
+    conn = psycopg2.connect(
+        host='postgres',
+        database="postgres1",
+        user="user1",
+        password="password1"
+    )
+
+    # Create a cursor object to interact with the database
+    cursor = conn.cursor()
+
+    # Execute the SQL statement
+    cursor.execute(create_metrics_table_query)
+    cursor.execute(create_evidently_report_table_query)
+
+    # Commit the changes to the database
+    conn.commit()
+
+    # Close the cursor and the database connection
+    cursor.close()
+    conn.close()
     
-    # Create the SQLAlchemy engine
-    engine = create_engine(credentials)
-    # Create the metrics table if it does not exist
-    engine.execute(create_metrics_table_query)
-    # Create the report table if it does not exist
-    engine.execute(create_evidently_report_table_query)
-    
-   
-def insert_metrics_to_db(df, prediction, credentials, table_name='model_metrics'):
-    """ inserts the metrics from our ML model into the postgres database for monitoring
+ 
+def insert_metrics_to_db(df, prediction, table_name, db_host, db_name, db_user, db_password):
+    """ inserts ml model inputs and prediction into a postgres database
 
     Args:
-        df (_type_): df of data to be inserted
-        prediction (_type_): the predicted output from the ML model
-        credentials (_type_): credentials for connecting to the db
-        table_name (str, optional): optional overwrite of the postgres table name
+        df (_type_): _description_
+        table_name (_type_): _description_
+        db_host (_type_): _description_
+        db_database (_type_): _description_
+        db_user (_type_): _description_
+        db_password (_type_): _description_
     """
-    engine = create_engine(credentials)
+    # Establish a connection to the PostgreSQL database
+    conn = psycopg2.connect(
+            host= db_host,
+            database= db_name,
+            user= db_user,
+            password= db_password
+        )
+
+    # Create a cursor object to interact with the database
+    cursor = conn.cursor()
+
+    # Specify the target table name
     table_name = table_name
-    df['predictions'] = prediction
-    # create generated time stamp for df
-    df['generated_at'] = datetime.now()
     
-    df.to_sql(table_name, engine, if_exists='append', index=False)
+    df = pd.DataFrame(df, index=[0])
+    df['predictions'] = prediction
+    
+    # create generated time stamp for df
+    #df['generated_at'] = datetime.now()
+
+    # Insert the DataFrame into the table
+    for row in df.itertuples(index=False):
+        insert_query = f"INSERT INTO {table_name} VALUES {tuple(row)}"
+        cursor.execute(insert_query)
+
+    # Commit the changes to the database
+    conn.commit()
+
+    # Close the cursor and the database connection
+    cursor.close()
+    conn.close()
+ 
 
 def calculate_evidently_metrics(df, prediction):
     """_summary_
@@ -111,7 +152,6 @@ def calculate_evidently_metrics(df, prediction):
        
     reference_data = pd.read_csv('./data/train_data.csv')
     
-    # get the reference data in the format we need
     # Turning target column into a numeric option
     reference_data['Stay_numeric'] = reference_data['Stay'].map(
     {'0-10': 1,
@@ -125,39 +165,62 @@ def calculate_evidently_metrics(df, prediction):
     '81-90': 9,
     '91-100': 10,
     'More than 100 Days':11})
-    
+
     # Dichotomise into admitted for Longer then 30 days or not
-    reference_data['long_stay'] = df['Stay_numeric']>3
-    reference_data['long_stay'] = df['long_stay'].replace({True:1, False:0})
+    reference_data['long_stay'] = reference_data['Stay_numeric']>3
+    #reference_data['long_stay'] = reference_data['long_stay'].replace({True:1, False:0})
+    target_column = reference_data['long_stay'].replace({True:1, False:0})
     
-    # Remove unneeded columns
-    reference_data = reference_data.drop(['Stay', 'Stay_numeric'], axis=1)
+    reference_data = reference_data.drop(['Stay_numeric', 'Stay'],axis=1)
+    reference_data = preprocess(reference_data)
     
     
-    num_features = ['Hospital_code',
-                    'City_Code_Hospital',
-                    'Available Extra Rooms in Hospital', 
-                    'total_amount', 
-                    'Bed Grade',
-                    'patientid',  
-                    'Admission_Deposit',  
-                    'City_Code_Patient',
-                    'Visitors with Patient',
-                    'long_stay']
-    cat_features = ['Hospital_type_code',
-                    'Hospital_region_code',
-                    'Department', 
-                    'Ward_Type',
-                    'Ward_Facility_Code',
-                    'Type of Admission',
-                    'Severity of Illness',
-                    'Age']
+    # num_features = ['Hospital_code',
+    #                 'City_Code_Hospital',
+    #                 'Available Extra Rooms in Hospital', 
+    #                 'total_amount', 
+    #                 'Bed Grade',
+    #                 'patientid',  
+    #                 'Admission_Deposit',  
+    #                 'City_Code_Patient',
+    #                 'Visitors with Patient',
+    #                 'long_stay']
+    # cat_features = ['Hospital_type_code',
+    #                 'Hospital_region_code',
+    #                 'Department', 
+    #                 'Ward_Type',
+    #                 'Ward_Facility_Code',
+    #                 'Type of Admission',
+    #                 'Severity of Illness',
+    #                 'Age']
     
+    num_features =['Hospital_code' ,
+            'Hospital_type_code' ,
+            'City_Code_Hospital' ,
+            'Hospital_region_code' ,
+            'Available_Extra_Rooms_in_Hospital' ,
+            'Department' ,
+            'Ward_Type' ,
+            'Ward_Facility_Code' ,
+            'Bed_Grade' ,
+            'patientid' ,
+            'City_Code_Patient' ,
+            'Type_of_Admission' ,
+            'Severity_of_Illness' ,
+            'Visitors_with_Patient' ,
+            'Age' ,
+            'Admission_Deposit' ,
+            'hosp_patient_same' ,
+            'Gender' ,
+            'Num_hospitals' ,
+            'unique_hospital_visited' ,
+            'prediction'
+            ]
   
     column_mapping = ColumnMapping(
-                    prediction='long_stay',
+                    prediction=target_column,
                     numerical_features=num_features,
-                    categorical_features=cat_features,
+                    #categorical_features=cat_features,
                     target=None
                     )
 

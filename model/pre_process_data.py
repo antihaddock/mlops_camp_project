@@ -1,4 +1,3 @@
-
 import pandas as pd
 import mlflow
 from sklearn.preprocessing import LabelEncoder
@@ -72,16 +71,22 @@ def best_model(experiment_name):
     mlflow.set_tracking_uri(tracking_uri)
     experiment_id = mlflow.get_experiment_by_name(experiment_name).experiment_id
     runs = mlflow.search_runs(experiment_ids=[experiment_id])
+    
     # make sure it isnt a failed run
     runs = runs[runs['status'] != 'FAILED']
+    
     # Filter the runs based on the specified run_name
     best_run = runs.loc[runs['metrics.auc_score'].idxmax()]
+    
     # Get the artifact URI for the best run
     artifact_uri = best_run['artifact_uri']
+    
+    # Get the run_id of the best run
+    run_id = best_run['run_id']
     # Load the model using the artifact URI
-    model = mlflow.sklearn.load_model(artifact_uri + "/model")
+    model = mlflow.sklearn.load_model(f'runs:/{run_id}/model')
     
     # Register the model for use
-    mlflow.register_model(model_uri=f"runs:/{artifact_uri}/models",  name='hospital_length_of_stay-classifier')
+    mlflow.register_model(model_uri=f'runs:/{run_id}/model',  name='hospital_length_of_stay-classifier')
     
     return model

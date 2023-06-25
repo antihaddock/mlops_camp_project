@@ -20,12 +20,10 @@ services:
 
   # All of the support application containers. We need:
   # 1. Mlflow - model tracking and registry
-  # 2. Evidently - model performance once in production
-  # 3. Grafana - Dashboarding of the model performance
-  # 4. Database - a postgres database to store model monitoring metrics
-  # 5. Database GUI - access the postgres database in the browser
-  # 6. Prefect 2.0 server
-
+  # 2. Database - a postgres database to store model monitoring metrics
+  # 3. Database GUI - access the postgres database in the browser
+  # 4. Prefect 2.0 server
+  # 5. Grafana - Dashboarding of the model performance
 
   mlflow:
     build:
@@ -40,23 +38,16 @@ services:
       - AWS_DEFAULT_REGION=${region}
     networks:
       - mynetwork
-   
-  # evidently_service:
-  #   build:
-  #     context: ./evidently
-  #     dockerfile: Dockerfile
-  #   depends_on:
-  #      - grafana
-  #   ports:
-  #     - "8085:8085"
-  #   networks:
-  #     - mynetwork
-  
+     
   database:
     image: postgres
+    container_name: postgres
     restart: always
     environment:
+      POSTGRES_USER: user1
       POSTGRES_PASSWORD: password1
+      POSTGRES_DB: postgres1
+    
     ports:
       - "5432:5432"
     networks:
@@ -70,28 +61,35 @@ services:
       PGADMIN_DEFAULT_PASSWORD: password1
       PGADMIN_LISTEN_ADDRESS: 0.0.0.0
       PGADMIN_LISTEN_PORT: 5050
+    container_name: pgadmin
     ports:
       - "5050:5050"
     networks:
       - mynetwork
 
-  prefect:
-    image: prefecthq/prefect
-    restart: always
-    command: prefect orion start
+  prefect-server:
+    image: prefecthq/prefect:2.10.13-python3.11
+    container_name: prefect
+    environment:
+      - PREFECT_UI_URL=http://127.0.0.0:4200/api
+      - PREFECT_API_URL=http://127.0.0.1:4200/api
+      - PREFECT_SERVER_API_HOST=0.0.0.0
+      - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://user1:password1@postgres:5432/postgres1
     ports:
-      - "8080:8080"
+      - 4200:4200
+    entrypoint: ["/opt/prefect/entrypoint.sh", "prefect", "server", "start"]
     networks:
       - mynetwork
 
-  grafana:
-    image: grafana/grafana
-    user: "472"
-    ports:
-      - "3000:3000"
-    networks:
-      - mynetwork    
-    restart: always
+  # grafana:
+  #   image: grafana/grafana
+  #   container_name: grafana
+  #   user: "472"
+  #   ports:
+  #     - "3000:3000"
+  #   networks:
+  #     - mynetwork    
+  #   restart: always
 
 # The networks we will utilise for the containers
 networks:

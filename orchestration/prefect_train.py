@@ -16,10 +16,10 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 from prefect import flow, task
-
+import mlflow
 
 @task
-def read_data(filename:str) -> pd.Dataframe:
+def read_data(filename:str) -> pd.DataFrame:
     # Read in data for exploration and drop unneeded columns
     df = pd.read_csv(filename, index_col='case_id')
     
@@ -27,7 +27,7 @@ def read_data(filename:str) -> pd.Dataframe:
 
 
 @task
-def pre_process(df) -> pd.Dataframe:
+def pre_process(df) -> pd.DataFrame:
     #-------------------- Pre Processing --------------------------------------------------
     # Turning target column into a numeric option
     df['Stay_numeric'] = df['Stay'].map(
@@ -114,11 +114,12 @@ def test_train_split(df):
 # We will use the Scikit Learn wrapper of xgb to avoid needing to create matrix and label encode the Y variables
 # these parameters have been found following EDA and modelling in notebook.ipynb
 @task
-def train_test_model(model, tracking_uri, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test):
+def train_test_model(model, tracking_uri, X_train, y_train, X_test, y_test):
        
      
     mlflow.set_tracking_uri(tracking_uri)
-    with mlflow.start_run(run_name='HospitalPrediction'):
+    mlflow.set_experiment('HospitalPrediction')
+    with mlflow.start_run():
             mlflow.log_param("model_name", type(model).__name__)
             model = model
 
@@ -150,15 +151,15 @@ def train_test_model(model, tracking_uri, X_train=X_train, y_train=y_train, X_te
 
 @flow
 def main_flow(filename, tracking_uri):
-    df = read_data()
+    df = read_data(filename)
     df = pre_process(df)   
     X_train, X_test, y_train, y_test = test_train_split(df)
     
    # Setup models we want to train     
-    models = [LogisticRegression(), RandomForestClassifier(), XGBClassifier()]
+    models = [LogisticRegression()]#, RandomForestClassifier(), XGBClassifier()]
 
     for model in models:
-        train_test_model(model)
+        train_test_model(model, tracking_uri, X_train, y_train, X_test, y_test)
 
 # ------------- train models and save them to Mlflow -------------------------------------------------------          
            
