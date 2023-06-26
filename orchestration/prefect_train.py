@@ -13,22 +13,38 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix, accuracy_score, roc_auc_score
 from sklearn.preprocessing import LabelEncoder
-from sklearn.ensemble import RandomForestClassifier
-from xgboost import XGBClassifier
+#from sklearn.ensemble import RandomForestClassifier
+#from xgboost import XGBClassifier
 from prefect import flow, task
 import mlflow
 
 @task
 def read_data(filename:str) -> pd.DataFrame:
+    """_summary_
+
+    Args:
+        filename (str): _description_
+
+    Returns:
+        pd.DataFrame: _description_
+    """
     # Read in data for exploration and drop unneeded columns
     df = pd.read_csv(filename, index_col='case_id')
-    
+
     return df
 
 
 @task
 def pre_process(df) -> pd.DataFrame:
-    #-------------------- Pre Processing --------------------------------------------------
+    """_summary_
+
+    Args:
+        df (_type_): _description_
+
+    Returns:
+        pd.DataFrame: _description_
+    """
+    #-------------------- Pre Processing -----------------------------
     # Turning target column into a numeric option
     df['Stay_numeric'] = df['Stay'].map(
     {'0-10': 1,
@@ -62,13 +78,11 @@ def pre_process(df) -> pd.DataFrame:
     ]
 
     for column in columns_to_encode:
-        # if column == "City_Code_Patient":
-        #     df[column] = df[column].astype('int')
-        # else:
-            df[column] = le.fit_transform(df[column].values)
+        df[column] = le.fit_transform(df[column].values)
 
     # If hosp and patient are in same city
-    df['hosp_patient_same'] = [1 if i == j else 0 for i, j in zip(df["City_Code_Hospital"].values, df['City_Code_Patient'].values)]
+    df['hosp_patient_same'] = [1 if i == j else 0 for i, j in zip(df["City_Code_Hospital"].values,
+                                                                  df['City_Code_Patient'].values)]
 
     # Gender. 1 -> Female, 0 -> Male
     df["Gender"] = [1 if i=="gynecology" else 0 for i in df["Department"].values]
@@ -81,17 +95,34 @@ def pre_process(df) -> pd.DataFrame:
     # number of unique hospitals visited
     df['unique_hospital_visited']=df.groupby('patientid')['Hospital_code'].transform('nunique')
 
-    class_map = {"0-10": 0, "11-20": 1, "21-30": 2, "31-40": 3, "41-50": 4, "51-60": 5, "61-70": 6, "71-80": 7, "81-90": 8, "91-100": 9, "More than 100 Days": 10}
-    #class_map_rev = {0: "0-10", 1: "11-20", 2: "21-30", 3: "31-40", 4: "41-50", 5: "51-60", 6: "61-70", 7: "71-80", 8: "81-90", 9: "91-100", 10: "More than 100 Days"}
+    class_map = {"0-10": 0,
+                 "11-20": 1,
+                 "21-30": 2,
+                 "31-40": 3,
+                 "41-50": 4, 
+                 "51-60": 5,
+                 "61-70": 6,
+                 "71-80": 7,
+                 "81-90": 8,
+                 "91-100": 9,
+                 "More than 100 Days": 10}
 
     df["Age"] = [(class_map[i]*10)+1 for i in df["Age"].values]
 
     return df
 
-#------------------- Drop na's at the end of this proces ------------------------------------------
+#----------------- Drop na's at the end of this proces ----------------
 
 @task
 def test_train_split(df):
+    """_summary_
+
+    Args:
+        df (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     # drop any left over na's
     df = df.dropna()
 
@@ -99,7 +130,7 @@ def test_train_split(df):
     df = df.drop(['Stay'], axis=1)
 
 
-    # -------------- Test Train split and create numeric target variable --------------------------------
+    # -------------- Test Train split and create numeric target variable -------
     # Test train split
     y = df['long_stay']
     X = df.drop(['long_stay',  'Stay_numeric'], axis=1)
@@ -110,60 +141,78 @@ def test_train_split(df):
     return X_train, X_test, y_train, y_test
 
 
-# ------------------ Train ML Models and store results in ML Flow --------------------------------------------------------- 
-# We will use the Scikit Learn wrapper of xgb to avoid needing to create matrix and label encode the Y variables
+# ------------------ Train ML Models and store results in ML Flow -------------
+# We will use the Scikit Learn wrapper of xgb to avoid needing to create matrix
+# and label encode the Y variables
 # these parameters have been found following EDA and modelling in notebook.ipynb
 @task
 def train_test_model(model, tracking_uri, X_train, y_train, X_test, y_test):
-       
-     
+    """_summary_
+
+    Args:
+        model (_type_): _description_
+        tracking_uri (_type_): _description_
+        X_train (_type_): _description_
+        y_train (_type_): _description_
+        X_test (_type_): _description_
+        y_test (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+
     mlflow.set_tracking_uri(tracking_uri)
     mlflow.set_experiment('HospitalPrediction')
     with mlflow.start_run():
-            mlflow.log_param("model_name", type(model).__name__)
-            model = model
+        mlflow.log_param("model_name", type(model).__name__)
+        model = model
 
-            # Fit the model to the training data
-            model.fit(X_train, y_train)
+        # Fit the model to the training data
+        model.fit(X_train, y_train)
 
-              # Predict the target variable for the test set
-            y_pred = model.predict(X_test)
+        # Predict the target variable for the test set
+        y_pred = model.predict(X_test)
 
-            # Create and print the confusion matrix
-            cm = confusion_matrix(y_test, y_pred, normalize='true')
-            print("Normalized Confusion Matrix:")
-            print(cm)
- 
-            # Calculate and print the accuracy score
-            accuracy = accuracy_score(y_test, y_pred)
-            mlflow.log_metric("accuracy", accuracy)
-            print("Accuracy:", accuracy)
+        # Create and print the confusion matrix
+        cm = confusion_matrix(y_test, y_pred, normalize='true')
+        print("Normalized Confusion Matrix:")
+        print(cm)
 
-            # Calculate the predicted probabilities and AUC score
-            y_prob = model.predict_proba(X_test)[:, 1]
-            auc_score = roc_auc_score(y_test, y_prob)
-            mlflow.log_metric("auc_score", auc_score)
-            print("AUC Score:", auc_score)
+        # Calculate and print the accuracy score
+        accuracy = accuracy_score(y_test, y_pred)
+        mlflow.log_metric("accuracy", accuracy)
+        print("Accuracy:", accuracy)
 
-            # Save the model as an artifact
-            mlflow.sklearn.log_model(model, "model")
+        # Calculate the predicted probabilities and AUC score
+        y_prob = model.predict_proba(X_test)[:, 1]
+        auc_score = roc_auc_score(y_test, y_prob)
+        mlflow.log_metric("auc_score", auc_score)
+        print("AUC Score:", auc_score)
+        # Save the model as an artifact
+        mlflow.sklearn.log_model(model, "model")
     return model
 
 @flow
 def main_flow(filename, tracking_uri):
+    """_summary_
+
+    Args:
+        filename (_type_): _description_
+        tracking_uri (_type_): _description_
+    """
     df = read_data(filename)
-    df = pre_process(df)   
+    df = pre_process(df)
     X_train, X_test, y_train, y_test = test_train_split(df)
-    
-   # Setup models we want to train     
+
+    # Setup models we want to train
     models = [LogisticRegression()]#, RandomForestClassifier(), XGBClassifier()]
 
     for model in models:
         train_test_model(model, tracking_uri, X_train, y_train, X_test, y_test)
 
-# ------------- train models and save them to Mlflow -------------------------------------------------------          
+# ------------- train models and save them to Mlflow -------------------------------------------------------
            
 if __name__ == "__main__":
-    filename = '../data/train_data.csv'
-    tracking_uri = 'http://0.0.0.0:8000' 
-    main_flow(filename, tracking_uri)
+    FILE_NAME = '../data/train_data.csv'
+    TRACKING_URI = 'http://0.0.0.0:8000' 
+    main_flow(FILE_NAME, TRACKING_URI)
