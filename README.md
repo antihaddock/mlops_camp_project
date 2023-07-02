@@ -11,7 +11,7 @@ This repo is the final project for the DataTalksClub MLOps Zoomcamp.
 The data set used for this project can be found on Kaggle here: https://www.kaggle.com/datasets/nehaprabhavalkar/av-healthcare-analytics-ii
 
 
-The aim of the dataset is to predict hospital length of stay - which is represented by the ``stay`` column. For the purpose of this repo and the project this target coliumn has been converted into a binary outcome of less then 30 days and greater then 30 days.
+The aim of the dataset is to predict hospital length of stay - which is represented by the ``stay`` column. For the purpose of this repo and the project this target coliumn has been converted into a binary outcome of less then 30 days and greater then 30 days. As such the purpose of this ML model is to predict if a patient admitted to hospital will be admitted for greater then 30 days or not.
 
 The dataset contains a range of variables related to the demographics of the patient and their medical history. A full data dictionary is available at `./data/train_data_dictionary.csv`. 
 
@@ -73,9 +73,10 @@ Versioning of the dependencies is available by the `requirements.txt` in the roo
 # Best Practices
 For this repo we have applied the following best practices:
 1. Unit tests are stored in `./tests/` subdirectory
-2. Integration tests are also stored at `./tests/` and callable via the makefile
+2. Integration tests are also stored at `./integration/` and callable via the makefile
 3. Makefile for runing the model is located in the root directory
 4. Code format checking utilising code linting
 5. Code linting and formatting is done via the Makefile and pylint + black and isort
+6. Git pre commit hooks used for this repo are found in `pre-commit-config.yml` in `./tests/` subdirectory
 
 

@@ -39,7 +39,7 @@ def log_model_performance(df, prediction):
     insert_metrics_to_db(
         df, prediction, table_name, db_host, db_name, db_user, db_password
     )
-    calculate_evidently_metrics(df, prediction)
+    # calculate_evidently_metrics(df, prediction)
     # check_metric_retrain()
 
 

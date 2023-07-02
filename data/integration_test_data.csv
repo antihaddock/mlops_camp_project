@@ -1,0 +1,2 @@
+Hospital_code,Hospital_type_code,City_Code_Hospital,Hospital_region_code,Available Extra Rooms in Hospital,Department,Ward_Type,Ward_Facility_Code,Bed Grade,patientid,City_Code_Patient,Type of Admission,Severity of Illness,Visitors with Patient,Age,Admission_Deposit,hosp_patient_same,Gender,Num_hospitals,unique_hospital_visited
+8,2,3,2,3,3,2,5,2,31397,6,0,0,2,51,4911,0,0,0,10
