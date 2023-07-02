@@ -37,7 +37,7 @@ app = Flask("hospital_stay_prediction")
 def predictions():
     """
     Makes predictions on incoming data from ML model
-    
+
     Returns:
         result: json object of the classes and probabilities
         of predicted data from the ML model

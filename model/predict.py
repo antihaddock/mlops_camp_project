@@ -25,7 +25,7 @@ def predict_outcome(df):
         y_pred: predicted classes
         y_prob: probabilities of the predicted class
     """
-    
+
     # import the best model from mlflow
     model = best_model("HospitalPrediction")
     # prepocess the df to feed into the model
@@ -38,7 +38,7 @@ def predict_outcome(df):
 
 
 def log_model_performance(df, prediction):
-    """ Logs the results of the ML model into the database
+    """Logs the results of the ML model into the database
     for storage
 
     Args:

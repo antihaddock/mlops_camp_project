@@ -14,10 +14,12 @@ import pandas as pd
 # from sklearn.ensemble import RandomForestClassifier
 # from xgboost import XGBClassifier
 from prefect import flow, task
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+from xgboost import XGBClassifier
 
 
 @task
@@ -38,13 +40,13 @@ def read_data(filename: str) -> pd.DataFrame:
 
 @task
 def pre_process(df) -> pd.DataFrame:
-    """_summary_
+    """
+    Pre processes a dataframe into the required format for ML modelling
 
     Args:
-        df (_type_): _description_
-
+        df (_type_): dataframe to be transformed
     Returns:
-        pd.DataFrame: _description_
+        pd.DataFrame: a transformed dataframe
     """
     # -------------------- Pre Processing -----------------------------
     # Turning target column into a numeric option
@@ -129,10 +131,11 @@ def test_train_split(df):
     """_summary_
 
     Args:
-        df (_type_): _description_
+        df (_type_): dataframe of data to be split into test and train
 
     Returns:
-        _type_: _description_
+        X_train, X_test, y_train, y_test: 4 arrays of test and train X and
+        Y datasets
     """
     # drop any left over na's
     df = df.dropna()
@@ -210,15 +213,15 @@ def main_flow(filename, tracking_uri):
     """_summary_
 
     Args:
-        filename (_type_): _description_
-        tracking_uri (_type_): _description_
+        filename (_type_): filename of the data used in the ml model training
+        tracking_uri (_type_): link to the mlflow uri that will be used for by prefect
     """
     df = read_data(filename)
     df = pre_process(df)
     X_train, X_test, y_train, y_test = test_train_split(df)
 
     # Setup models we want to train
-    models = [LogisticRegression()]  # , RandomForestClassifier(), XGBClassifier()]
+    models = [LogisticRegression(), RandomForestClassifier()]  # , XGBClassifier()]
 
     for model in models:
         train_test_model(model, tracking_uri, X_train, y_train, X_test, y_test)
@@ -227,6 +230,6 @@ def main_flow(filename, tracking_uri):
 # ------------- train models and save them to Mlflow -------------------------------------------------------
 
 if __name__ == "__main__":
-    FILE_NAME = "../data/train_data.csv"
+    FILE_NAME = "./data/train_data.csv"
     TRACKING_URI = "http://0.0.0.0:8000"
     main_flow(FILE_NAME, TRACKING_URI)

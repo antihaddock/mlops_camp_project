@@ -55,6 +55,7 @@ To run and deploy this setup to AWS you need to follow the below steps:
 `aws_access_key_id=ID`
 `aws_secret_access_key=KEY`
 `region=REGION`
+The below are only needed for deployment to AWS of the docker containers.
 `ami-id=id`
 `KEY_PAIR_NAME=name`
 `vpc_id=vpc-id`
@@ -70,7 +71,7 @@ You will still need have a `.env` with these variables
 `aws_secret_access_key=KEY`
 `region=REGION`
 
-1. You can then call `make up` which will run the steps to deploy locally
+1. You can then call `make local_run` which will run the steps to deploy, train and make predictions locally. Be warned it will take around 30 minutes to train the `XGBoost` and `RandomForestClassifier` models. If you want to speed this up comment out these models in line 224 of `orchestration/prefect_train.py`
 2. Alternatively you can interact directly with the docker-compose.yml at `./docker/docker-compose.yml` by calling docker compose build follow by `docker compose up`
 This will deploy the containers locally from the command line
 3. Utilise `./model/flask_app.py` to interact with the deployed containers and return predictions on the model.

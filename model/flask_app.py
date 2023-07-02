@@ -15,7 +15,7 @@ url = "http://0.0.0.0:5000/predict_outcome"
 # host = 'mlbookcamp-env.eba-msik3tgu.ap-southeast-2.elasticbeanstalk.com'
 # url = f'http://{host}/predict_outcome'
 
-df = pd.read_csv("../data/test_data.csv")
+df = pd.read_csv("./data/test_data.csv")
 # This will run through and provide a prediction against each row in the test_data.csv
 for i in range(7):  # range(len(df)):
     client = df.iloc[i].to_dict()

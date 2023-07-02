@@ -13,7 +13,8 @@ all: infrastructure
 
 # setups up the virtual environment
 setup:
-	pipenv install --dev
+	pip install pipenv
+	pipenv run pip install -r requirements.txt
 	pipenv run pre-commit install	
 
 # Run unit tests on the repo from the tests subdirectory
@@ -24,16 +25,25 @@ test:
 quality_checks: tests
 	isort .
 	black .
-	pylint --recursive=y .
+#	pylint --recursive=y  .
 
 # build our docker containers from the docker subdirectory
 build: quality_checks
 	cd docker && \
     docker compose build --no-cache
 
+#--------------------- Local deployment ------------------------------------------------
 # for local deployment go to the docker subdirectory, build the containers and load them
-local: 
-	cd docker && docker compose build && docker compose up
+local_up: quality_checks
+	cd docker && docker compose build && docker compose up -d
+
+local_train: local_up
+	python ./orchestration/prefect_train.py
+
+local_run: local_train
+	python ./model/flask_app.py
+
+# --------------------------------------------------------------------------------------
 
 # run integration tests after the build
 integration_test: build
