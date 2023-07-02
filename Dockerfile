@@ -10,6 +10,4 @@ COPY ["./model/*.py", "./"]
 
 EXPOSE 5000
 
-EXPOSE 8000
-
 ENTRYPOINT ["gunicorn", "--bind=0.0.0.0:5000", "predict:app"]

@@ -46,8 +46,9 @@ local_run: local_train
 # --------------------------------------------------------------------------------------
 
 # run integration tests after the build
-integration_test: build
-	LOCAL_IMAGE_NAME=${INTEGRATION_IMAGE_NAME} bash integrations/run.sh
+integration_test: setup
+	LOCAL_IMAGE_NAME=${INTEGRATION_IMAGE_NAME} 
+	./integration/run.sh
 
 # Push the docker compose containers to ECR on AWS
 docker_push: build

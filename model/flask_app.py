@@ -5,10 +5,10 @@ import pandas as pd
 import requests
 
 # Local port flask app test options
-# url = 'http://127.0.0.1:5000/predict_outcome'
+url = "http://127.0.0.1:5000/predict_outcome"
 
 # docker image locally port
-url = "http://0.0.0.0:5000/predict_outcome"
+# url = "http://0.0.0.0:5000/predict_outcome"
 # url = 'http://127.0.0.1:5000/predict_outcome'
 
 # Elastic Beanstalk address to interact with the model

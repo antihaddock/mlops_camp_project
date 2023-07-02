@@ -221,7 +221,7 @@ def main_flow(filename, tracking_uri):
     X_train, X_test, y_train, y_test = test_train_split(df)
 
     # Setup models we want to train
-    models = [LogisticRegression(), RandomForestClassifier()]  # , XGBClassifier()]
+    models = [LogisticRegression() , RandomForestClassifier() , XGBClassifier()]
 
     for model in models:
         train_test_model(model, tracking_uri, X_train, y_train, X_test, y_test)
