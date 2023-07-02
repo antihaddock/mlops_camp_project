@@ -5,3 +5,4 @@
 terraform.tfstate*
 *.tfstate*
 *.tfvars
+.pytest_cache/
