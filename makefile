@@ -8,10 +8,11 @@ LOCAL_IMAGE_NAME := mlopscamp_project
 INTEGRATION_IMAGE_NAME := integration_test
 IMAGE_TAG := mlops
 
+all: setup test infrastructure quality_checks build integration_test docker_push deploy
+
 setup:
 	pipenv install --dev
-	. $(shell pipenv --venv)/bin/activate && \
-		pre-commit install
+	pipenv run pre-commit install	
 
 test: 
 	pytest tests/
@@ -19,27 +20,36 @@ test:
 infrastructure: test
 	cd infastructure && \
 		terraform init && \
-		terraform apply -auto-approve -target=aws_s3_bucket.example
+		terraform apply -auto-approve -target=aws_s3_bucket.mlopsbucket \
+		-var "aws_access_key_id=$(AWS_ACCESS_KEY_ID)" \
+		-var "aws_secret_access_key=$(AWS_SECRET_ACCESS_KEY)" \
+		-var "aws_region=$(AWS_REGION)"
 
 quality_checks: 
 	isort .
 	black .
 	pylint --recursive=y .
 
-build: quality_checks test
-	docker compose build -t ${LOCAL_IMAGE_NAME} --no-cache
+build: test
+	cd docker && \
+    docker compose build --no-cache
 
-up: build infrastructure
-	docker compose up
+
+up: 
+	cd docker && docker compose up
 
 integration_test: build
 	LOCAL_IMAGE_NAME=${INTEGRATION_IMAGE_NAME} bash integrations/run.sh
 
-docker_push: up
-	@$(shell aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com)
-	docker-compose push
-	docker tag $(LOCAL_IMAGE_NAME):$(IMAGE_TAG) $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(REPOSITORY_NAME):$(IMAGE_TAG)
-	docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(REPOSITORY_NAME):$(IMAGE_TAG)
+docker_push: build
+	@aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
+
+    # Push the Docker Compose images to ECR
+	@docker-compose push
+
+    # Tag and push the specified image to ECR
+	@docker tag $(LOCAL_IMAGE_NAME):$(IMAGE_TAG) $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(REPOSITORY_NAME):$(IMAGE_TAG)
+	@docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(REPOSITORY_NAME):$(IMAGE_TAG)
 
 deploy: docker_push
 	cd infastructure && \

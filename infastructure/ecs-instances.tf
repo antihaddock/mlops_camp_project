@@ -1,8 +1,3 @@
-# Define provider and AWS credentials
-provider "aws" {
-  region = "<AWS_REGION>"
-}
-
 # Create ECS cluster
 resource "aws_ecs_cluster" "ecs_cluster" {
   name = "my-ecs-cluster"

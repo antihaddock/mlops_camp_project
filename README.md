@@ -62,10 +62,10 @@ This will deploy the containers locally
 3. Utilise `./model/flask_app.py` to interact with the deployed containers and return predictions on the model.
 
 When deployed locally you can access the servers at the following addresses. (If deployed to AWS you will need to locate the  URI's for your deployments)
-- Prefect:
-- Mlflow:
-- Grafana: 
-- Postgres admin :
+- Prefect: 127.0.0.1:4200/
+- Mlflow: 127.0.0.1:8000/
+- Grafana: http://127.0.0.1:3000/login
+- Postgres admin: http://0.0.0.0:5050
 
 Versioning of the dependencies is available by the `requirements.txt` in the root directory and the `Pipfile` built of this also in the root of this repo.
 
