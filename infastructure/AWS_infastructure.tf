@@ -1,3 +1,21 @@
+# Load environment variables from .env file
+locals {
+  aws_access_key     = file("./docker/.env")["AWS_ACCESS_KEY"]
+  aws_secret_key     = file("./docker/.env")["AWS_SECRET_KEY"]
+  aws_region         = file("./docker/.env")["AWS_REGION"]
+  ami_id             = file("./docker/.env")["AMI_ID"]
+  key_pair_name      = file("./docker/.env")["KEY_PAIR_NAME"]
+  subnet_id          = file("./docker/.env")["SUBNET_ID"]
+  bucket_name        = file("./docker/.env")["BUCKET_NAME"]
+}
+
+# Configure AWS provider
+provider "aws" {
+  access_key = local.aws_access_key
+  secret_key = local.aws_secret_key
+  region     = local.aws_region
+}
+
 # Create ECS cluster
 resource "aws_ecs_cluster" "ecs_cluster" {
   name = "my-ecs-cluster"
@@ -57,11 +75,11 @@ resource "aws_security_group" "ecs_instance_sg" {
 # Create launch configuration for ECS instances
 resource "aws_launch_configuration" "ecs_launch_configuration" {
   name          = "ecs-launch-configuration"
-  image_id      = "<AMI_ID>"
+  image_id      = local.ami_id
   instance_type = "t2.micro"
   iam_instance_profile = aws_iam_instance_profile.ecs_instance_profile.name
   security_groups      = [aws_security_group.ecs_instance_sg.id]
-  key_name             = "<KEY_PAIR_NAME>"
+  key_name             = local.key_pair_name
 }
 
 # Create auto scaling group for ECS instances
@@ -71,8 +89,15 @@ resource "aws_autoscaling_group" "ecs_autoscaling_group" {
   min_size             = 1
   max_size             = 4
   launch_configuration = aws_launch_configuration.ecs_launch_configuration.name
-  vpc_zone_identifier  = ["<SUBNET_ID>"]
+  vpc_zone_identifier  = [local.subnet_id]
 }
+
+# Create S3 bucket
+resource "aws_s3_bucket" "mlopsbucket" {
+  bucket = local.bucket_name
+  # Additional bucket configuration options
+}
+
 
 # Output ECS cluster name
 output "ecs_cluster_name" {

@@ -79,11 +79,7 @@ def best_model(experiment_name):
     Returns:
     model: Loads the model with the best AUC value saved into MLflow for use
     """
-    # for local user
-    # tracking_uri = 'http://127.0.0.1:8000'
-    # for using only the flask app and the mlflow server running locally
-    # tracking_uri =  'http://host.docker.internal:8000'
-    # for docker-compose use
+
     tracking_uri = "http://mlflow-container:8000"
     mlflow.set_tracking_uri(tracking_uri)
     experiment_id = mlflow.get_experiment_by_name(experiment_name).experiment_id

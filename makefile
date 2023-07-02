@@ -8,7 +8,7 @@ LOCAL_IMAGE_NAME := mlopscamp_project
 INTEGRATION_IMAGE_NAME := integration_test
 IMAGE_TAG := mlops
 
-all: setup test infrastructure quality_checks build integration_test docker_push deploy
+all: infrastructure
 
 setup:
 	pipenv install --dev
@@ -17,23 +17,14 @@ setup:
 test: 
 	pytest tests/
 
-infrastructure: test
-	cd infastructure && \
-		terraform init && \
-		terraform apply -auto-approve -target=aws_s3_bucket.mlopsbucket \
-		-var "aws_access_key_id=$(AWS_ACCESS_KEY_ID)" \
-		-var "aws_secret_access_key=$(AWS_SECRET_ACCESS_KEY)" \
-		-var "aws_region=$(AWS_REGION)"
-
-quality_checks: 
+quality_checks: tests
 	isort .
 	black .
 	pylint --recursive=y .
 
-build: test
+build: quality_checkes
 	cd docker && \
     docker compose build --no-cache
-
 
 up: 
 	cd docker && docker compose up
@@ -55,3 +46,17 @@ deploy: docker_push
 	cd infastructure && \
 		terraform init && \
 		terraform apply -auto-approve -target=aws_launch_configuration.ecs_launch_configuration -target=aws_autoscaling_group.ecs_autoscaling_group
+
+infrastructure: deploy
+	cd infastructure && \
+		terraform init && \
+		terraform apply -auto-approve
+
+train: deploy
+	python orchestration/prefect_train.py
+	
+predict: train
+	python ./model/flask_app.py
+
+
+

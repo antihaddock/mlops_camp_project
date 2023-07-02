@@ -28,18 +28,20 @@ AWS used for deployment of this repo
 THe flow of the repo and its containers will be summarized below
 
 # Infastructure creation
-Terraform is used to create all infastructure for this project. Terraform code can be found in the `infastructure` directory. It is used to create the S3 bucket and AWS instances to which the docker containers can deployed. `./infastructure/AWS_infastructure.tf` contains the IAC code for deployment of the infastructure for this repo.
+Terraform is used to create all infastructure for this project. Terraform code can be found in the `infastructure` directory. It is used to create the S3 bucket and AWS ECS services to which the docker containers can deployed. `./infastructure/AWS_infastructure.tf` contains the IAC code for deployment of the infastructure for this repo and is created through the makefile `make infastructure` command.
 
 A visual representation of the infastructure can be seen here: <img src="./MLOps Workflow.png" title="Repo Layout">
 
 # Orchestration
-Prefect is used as the orchestration platform for the repo and is programmed to run `./orchestation/prefect_train.py` . A Prefect server is deployed in `./docker/docker-compose.yml` and configured to run within the code base of this repo. The prefect server is configured to utilised a Postgres database container for its backend storage.
+Prefect is used as the orchestration platform for the repo and is programmed to run via `./orchestation/prefect_train.py` . A Prefect server is deployed in `./docker/docker-compose.yml` and configured to run within the code base of this repo. The prefect server is configured to utilised a Postgres database container for its backend storage.
+
+In order for the model to be trained for the first time the docker containers must be running, then `prefect_train.py` can be called to train a variety of models on which the model deployment can run. the prefect server within the docker container must be running for this to work.
 
 
 # Model deployment
- The main ML model is deployed via a flask app in a docker container. The docker-compose at `./docker/docker-compose.yml` lists the  `flaskapp` container which drives the ML model. This app communicates with a Mlflow container to search for and register the best model available in the mlflow to make predictions on the data.
+ The main ML model is deployed via a flask app in a docker container. The docker-compose at `./docker/docker-compose.yml` lists the  `flaskapp` container which drives the ML model. This app communicates with a Mlflow container to search for and register the best model available in the mlflow server to make predictions on the data.
 
- The entire model can be tested by calling `./model/flask_app.py` which is configured to access the ML model, return predictions and log these predictions with Evidently and store in a postgres database (docker container). The flask app searches Mlflow for the most up to date model with each run.
+ The entire model can be tested by calling `./model/flask_app.py` which is configured to access the ML model, return predictions and log these predictions with Evidently and store in a postgres database (docker container). The flask app searches Mlflow for the most up to date model with each run. The docker compose needs to be running for `flask_app.py` to work. You must have called `./orchestation/prefect_train.py` at least once in order for the model to make predictions otherwise an error will be returned that no model exists.
 
 
 # Model Monitoring
@@ -48,17 +50,29 @@ We utilise evidently for model monitoring. Code related to model monitoring can 
 I have had a horrid time trying to get Evidently working on this dataset to no success(really weird data type errors that make no sense). As such all the code is configured to run reports, store reports and dashboard, but in order for the repo to run for anyone, it is commented out in `./model/predict.py`
 
 # Reproducibility
-In order to run this repo you have the follow these steps:
+To run and deploy this setup to AWS you need to follow the below steps:
 1. In order to have this model deploy to AWS you MUST put a `.env `file into `./docker/` subdirectory. The repo expects this `.env` to be in the format of:
 `aws_access_key_id=ID`
 `aws_secret_access_key=KEY`
 `region=REGION`
-This `.env` file is used to load these env variables into the docker-compose.yml and also Terraform code.
+`ami-id=id`
+`KEY_PAIR_NAME=name`
+`vpc_id=vpc-id`
+`subnet_id=subnet-id`
+`bucket_name=bucketname`
+`ami_id=ami_id`
 
-Once you have done this to run the repo you can either:
-1. Utilise the make file to complete all the steps to run the repo
-2. interact directly with the docker-compose.yml at `./docker/docker-compose.yml` by calling docker compose build follow by `docker compose up`
-This will deploy the containers locally
+This `.env` file is used to load these env variables into the docker-compose.yml and also Terraform code in `./infastructure`. from the root directory call `make all` which will deploy the model.
+
+To run this locally:
+You will still need have a `.env` with these variables
+`aws_access_key_id=ID`
+`aws_secret_access_key=KEY`
+`region=REGION`
+
+1. You can then call `make up` which will run the steps to deploy locally
+2. Alternatively you can interact directly with the docker-compose.yml at `./docker/docker-compose.yml` by calling docker compose build follow by `docker compose up`
+This will deploy the containers locally from the command line
 3. Utilise `./model/flask_app.py` to interact with the deployed containers and return predictions on the model.
 
 When deployed locally you can access the servers at the following addresses. (If deployed to AWS you will need to locate the  URI's for your deployments)
@@ -78,5 +92,3 @@ For this repo we have applied the following best practices:
 4. Code format checking utilising code linting
 5. Code linting and formatting is done via the Makefile and pylint + black and isort
 6. Git pre commit hooks used for this repo are found in `pre-commit-config.yml` in `./tests/` subdirectory
-
-

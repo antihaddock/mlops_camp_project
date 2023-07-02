@@ -2,13 +2,8 @@
 # Takes the pickle file from train.py and utilises this inside a flask server to return a prediction based on data provided to the server
 
 import pandas as pd
-from config_db import (
-    calculate_evidently_metrics,
-    check_metric_retrain,
-    credentials,
-    insert_metrics_to_db,
-    prep_db,
-)
+from config_db import insert_metrics_to_db, prep_db
+from evidently_log import calculate_evidently_metrics, check_model_performance
 from flask import Flask, jsonify, request
 from pre_process_data import best_model, preprocess
 
@@ -44,9 +39,6 @@ def log_model_performance(df, prediction):
     insert_metrics_to_db(
         df, prediction, table_name, db_host, db_name, db_user, db_password
     )
-    # calculate_evidently_metrics(df, prediction)
-    # check_metric_retrain()
-
 
 # The flask app and flask main function
 app = Flask("hospital_stay_prediction")
@@ -60,7 +52,8 @@ def predictions():
     result = {"Class": prediction.tolist(), "probability": prediction_prob.tolist()}
     print(result)
     log_model_performance(data, prediction)
-
+    #calculate_evidently_metrics(df, prediction)
+    #check_model_performance()
     return jsonify(result)
 
 

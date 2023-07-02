@@ -5,4 +5,7 @@
 terraform.tfstate*
 *.tfstate*
 *.tfvars
+
+#Pytest files
 .pytest_cache/
+.tests/__pycache__/*
