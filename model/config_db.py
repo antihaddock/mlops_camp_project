@@ -3,8 +3,11 @@ from datetime import datetime
 import pandas as pd
 import psycopg2
 from evidently import ColumnMapping
-from evidently.metrics import (ColumnDriftMetric, DatasetDriftMetric,
-                               DatasetMissingValuesMetric)
+from evidently.metrics import (
+    ColumnDriftMetric,
+    DatasetDriftMetric,
+    DatasetMissingValuesMetric,
+)
 from evidently.report import Report
 from pre_process_data import preprocess
 from sqlalchemy import create_engine

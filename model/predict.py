@@ -2,8 +2,13 @@
 # Takes the pickle file from train.py and utilises this inside a flask server to return a prediction based on data provided to the server
 
 import pandas as pd
-from config_db import (calculate_evidently_metrics, check_metric_retrain,
-                       credentials, insert_metrics_to_db, prep_db)
+from config_db import (
+    calculate_evidently_metrics,
+    check_metric_retrain,
+    credentials,
+    insert_metrics_to_db,
+    prep_db,
+)
 from flask import Flask, jsonify, request
 from pre_process_data import best_model, preprocess
 

@@ -13,8 +13,7 @@ services:
     environment:                            
       - AWS_ACCESS_KEY_ID=${aws_access_key_id}
       - AWS_SECRET_ACCESS_KEY=${aws_secret_access_key}
-      - AWS_DEFAULT_REGION=${region}
-      - EVIDENTLY_SERVICE=http://evidently_service.:8085' 
+      - AWS_DEFAULT_REGION=${region} 
     networks:
       - mynetwork
 
@@ -81,15 +80,15 @@ services:
     networks:
       - mynetwork
 
-  # grafana:
-  #   image: grafana/grafana
-  #   container_name: grafana
-  #   user: "472"
-  #   ports:
-  #     - "3000:3000"
-  #   networks:
-  #     - mynetwork    
-  #   restart: always
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    user: "472"
+    ports:
+      - "3000:3000"
+    networks:
+      - mynetwork    
+    restart: always
 
 # The networks we will utilise for the containers
 networks:
