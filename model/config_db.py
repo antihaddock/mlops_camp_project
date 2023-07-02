@@ -2,7 +2,6 @@ import pandas as pd
 import psycopg2
 
 
-
 def credentials(db_user, db_password, db_host, db_port, db_name):
     """provides summary for the postgres database we are using
 
@@ -127,5 +126,3 @@ def insert_metrics_to_db(
     # Close the cursor and the database connection
     cursor.close()
     conn.close()
-
-

@@ -3,6 +3,9 @@ import pandas as pd
 
 
 def test_read_csv_file():
+    """
+    unit test to check if a csv file is being read
+    """
     # Create a temporary CSV file for testing
     file_path = "./data/test_data.csv"
     data = pd.read_csv(file_path)

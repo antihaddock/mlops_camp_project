@@ -15,6 +15,17 @@ from pre_process_data import best_model, preprocess
 
 
 def predict_outcome(df):
+    """
+    Predicts the outcome of the input data off the ML model
+
+    Args:
+        df (_type_): input data in the dtype of a dataframe
+
+    Returns:
+        y_pred: predicted classes
+        y_prob: probabilities of the predicted class
+    """
+    
     # import the best model from mlflow
     model = best_model("HospitalPrediction")
     # prepocess the df to feed into the model
@@ -27,6 +38,13 @@ def predict_outcome(df):
 
 
 def log_model_performance(df, prediction):
+    """ Logs the results of the ML model into the database
+    for storage
+
+    Args:
+        df (_type_): df of the input data
+        prediction (_type_): prediction from the ML model off the input data
+    """
     db_user = "user1"
     db_password = "password1"
     db_host = "postgres"
@@ -40,20 +58,27 @@ def log_model_performance(df, prediction):
         df, prediction, table_name, db_host, db_name, db_user, db_password
     )
 
+
 # The flask app and flask main function
 app = Flask("hospital_stay_prediction")
 
 
 @app.route("/predict_outcome", methods=["POST"])
 def predictions():
+    """
+    Implements prediction of outcome from data provided to the ML model
+
+    Returns:
+       results: json objects of the results of the ML model predictions
+    """
     data = request.get_json()
     prediction, prediction_prob = predict_outcome(data)
 
     result = {"Class": prediction.tolist(), "probability": prediction_prob.tolist()}
     print(result)
     log_model_performance(data, prediction)
-    #calculate_evidently_metrics(df, prediction)
-    #check_model_performance()
+    # calculate_evidently_metrics(df, prediction)
+    # check_model_performance()
     return jsonify(result)
 
 

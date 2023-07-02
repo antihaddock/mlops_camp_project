@@ -1,3 +1,4 @@
+from config_db import credentials, prep_db
 from evidently import ColumnMapping
 from evidently.metrics import (
     ColumnDriftMetric,
@@ -8,19 +9,18 @@ from evidently.report import Report
 from pre_process_data import preprocess
 from sklearn.metrics import roc_auc_score
 from sqlalchemy import create_engine
-from config_db import credentials, prep_db
 
 
 def check_model_performance(true_labels, predicted_labels, threshold=0.75):
     """_summary_
 
     Args:
-        true_labels (_type_): true labels of the data which predictions are 
+        true_labels (_type_): true labels of the data which predictions are
         generated for
         predicted_labels (_type_): predicted labels from data passed to the ML model
 
     Returns:
-        boolean : returns true if model performance below a threshold default of 
+        boolean : returns true if model performance below a threshold default of
         0.75 else returns false
     """
     auc = roc_auc_score(true_labels, predicted_labels)
@@ -31,7 +31,7 @@ def check_model_performance(true_labels, predicted_labels, threshold=0.75):
 
 
 def calculate_evidently_metrics(df, prediction):
-    """ Calculates the ML model performance against reference data. Reports generated are:
+    """Calculates the ML model performance against reference data. Reports generated are:
             ColumnDriftMetric(),
             DatasetDriftMetric(),
             DatasetMissingValuesMetric(),
@@ -132,11 +132,7 @@ def calculate_evidently_metrics(df, prediction):
     table_name = "evidently_report"
 
     report_metrics.to_sql(table_name, engine, if_exists="append", index=False)
-    
+
     needs_retraining = check_model_performance(target_column, prediction)
-    
+
     return needs_retraining
-
-
-
-

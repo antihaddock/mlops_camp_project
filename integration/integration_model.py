@@ -12,6 +12,15 @@ with open("./model.pkl", "rb") as f_in:
 
 
 def predict_outcome(df):
+    """_summary_
+
+    Args:
+        df (_type_): dataframe of data for prediction
+
+    Returns:
+        y_pred: predicted classes
+        y_prob: probabilities of the predicted class
+    """
     df = np.array([list(df.values())])
     # make predictions and retun class and probability of prediction
     y_pred = model.predict(df)
@@ -26,6 +35,13 @@ app = Flask("hospital_stay_prediction")
 
 @app.route("/predict_outcome", methods=["POST"])
 def predictions():
+    """
+    Makes predictions on incoming data from ML model
+    
+    Returns:
+        result: json object of the classes and probabilities
+        of predicted data from the ML model
+    """
     data = request.get_json()
     prediction, prediction_prob = predict_outcome(data)
     result = {"Class": prediction.tolist(), "probability": prediction_prob.tolist()}

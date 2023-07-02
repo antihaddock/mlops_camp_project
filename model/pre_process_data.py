@@ -74,10 +74,13 @@ def preprocess(df):
 
 
 # return the best model stored in mlflow
-def best_model(experiment_name):
+def best_model(experiment_name):    
     """
+     Args:
+        experiment_name (_type_):the name of the experiment to pass to mlflow
+
     Returns:
-    model: Loads the model with the best AUC value saved into MLflow for use
+        model: Loads the model with the best AUC value saved into MLflow for use
     """
 
     tracking_uri = "http://mlflow-container:8000"
