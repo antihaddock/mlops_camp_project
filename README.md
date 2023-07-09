@@ -1,5 +1,4 @@
-Working Repo for the DataTalksClub MLOps Zoomcamp project
-Written by Ryan Gallagher
+Working Repo for the DataTalksClub MLOps Zoomcamp project.
 
 
 ## How To Use This Repo ##
@@ -79,8 +78,8 @@ This will deploy the containers locally from the command line
 3. Utilise `./model/flask_app.py` to interact with the deployed containers and return predictions on the model.
 
 When deployed locally you can access the servers at the following addresses. (If deployed to AWS you will need to locate the  URI's for your deployments)
-- Prefect: 127.0.0.1:4200/
-- Mlflow: 127.0.0.1:8000/
+- Prefect: http://127.0.0.1:4200/
+- Mlflow: http://127.0.0.1:8000/
 - Grafana: http://127.0.0.1:3000/login
 - Postgres admin: http://0.0.0.0:5050
 
