@@ -1,18 +1,25 @@
 from config_db import credentials, prep_db
 from evidently import ColumnMapping
-from evidently.metrics import (
-    ColumnDriftMetric,
-    DatasetDriftMetric,
-    DatasetMissingValuesMetric,
-)
+# from evidently.metrics import (
+#     ColumnDriftMetric,
+#     DatasetDriftMetric,
+#     DatasetMissingValuesMetric,
+# )
+from evidently.test_suite import TestSuite
+from evidently.test_preset import DataStabilityTestPreset
 from evidently.report import Report
 from pre_process_data import preprocess
 from sklearn.metrics import roc_auc_score
 from sqlalchemy import create_engine
+import pandas as pd
+import subprocess
 
-
-def check_model_performance(true_labels, predicted_labels, threshold=0.75):
-    """_summary_
+def check_model_performance(predicted_labels, threshold=0.75):
+    """
+    Checks if the results of the ML model are below a defined auc threshold. 
+    If the results are below the threshold then the python file to trigger 
+    retraining is called and a true result is returned. If not a false result
+    is returned.
 
     Args:
         true_labels (_type_): true labels of the data which predictions are
@@ -23,8 +30,13 @@ def check_model_performance(true_labels, predicted_labels, threshold=0.75):
         boolean : returns true if model performance below a threshold default of
         0.75 else returns false
     """
+    
+    true_labels = pd.read_csv('../data/train_data.csv')
+    true_labels = preprocess(true_labels)
+    true_labels = true_labels['long_stay'] 
     auc = roc_auc_score(true_labels, predicted_labels)
     if auc < threshold:
+        subprocess.run(["python", "../orchestration/prefect_train.py"])
         return True
     else:
         return False
@@ -100,17 +112,9 @@ def calculate_evidently_metrics(df, prediction):
         target=None,
     )
 
-    report = Report(
-        metrics=[
-            ColumnDriftMetric(column_name=prediction),
-            DatasetDriftMetric(),
-            DatasetMissingValuesMetric(),
-        ]
-    )
-    report.run(
-        reference_data=reference_data, current_data=df, column_mapping=column_mapping
-    )
-
+    report = TestSuite(tests=[DataStabilityTestPreset()])
+    report.run(reference_data=reference_data, current_data=df, column_mapping=None)
+    
     result = report.as_dict()
     prediction_drift = result["metrics"][0]["result"]["drift_score"]
     num_drifted_columns = result["metrics"][1]["result"]["number_of_drifted_columns"]
@@ -132,7 +136,3 @@ def calculate_evidently_metrics(df, prediction):
     table_name = "evidently_report"
 
     report_metrics.to_sql(table_name, engine, if_exists="append", index=False)
-
-    needs_retraining = check_model_performance(target_column, prediction)
-
-    return needs_retraining

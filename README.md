@@ -45,9 +45,11 @@ In order for the model to be trained for the first time the docker containers mu
 
 
 # Model Monitoring
-We utilise evidently for model monitoring. Code related to model monitoring can be found in `./monitoring` directory. `./model/predict.py` and `./model/config_db.py` contain the code base for evidently reports to be generated and logged on a ML model run. The evidently data is stored in the postgres database for access by a Grafana dashboard (which is also deployed as a docker container).
+We utilise evidently for model monitoring. Code related to model monitoring can be found in `./model/evidently_log.py` file. `./model/predict.py` and `./model/config_db.py` contain the code base for evidently reports to be generated and logged on a ML model run. The evidently data is stored in the postgres database for access by a Grafana dashboard (which is also deployed as a docker container).
 
-I have had a horrid time trying to get Evidently working on this dataset to no success(really weird data type errors that make no sense). As such all the code is configured to run reports, store reports and dashboard, but in order for the repo to run for anyone, it is commented out in `./model/predict.py`
+The Evidently reports takes several minutes on this dataset to generate. As such it is run asynchronously in `predict.py` to avoide the API from retuning the prediction results. As such all the code is configured to run reports, store reports in a database and facilitate dashboarding  asynchronously to the model returning results. 
+`check_model_performance()`  function returns a boolean result if the auc of the predicted results are below the threshold. This can be used to retrigger model training if the result is below the set threshold by using the `subprocess` library to call and run the `/orchestration/prefect_train.py` file which is responsible for model training.
+
 
 # Reproducibility
 To run and deploy this setup to AWS you need to follow the below steps:
