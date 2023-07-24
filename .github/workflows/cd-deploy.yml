@@ -1,0 +1,69 @@
+name: CD-Deploy
+on:
+  push:
+    branches:
+      - 'develop'
+
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: "ap-southeast-2"
+      - uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+
+      # Define the infrastructure
+      - name: TF plan
+        id: tf-plan
+        working-directory: 'infrastructure'
+        run: |
+          terraform init -backend-config="key=mlops-zoomcamp-prod.tfstate" -reconfigure && terraform plan 
+
+      - name: TF Apply
+        id: tf-apply
+        working-directory: 'infrastructure'
+        if: ${{ steps.tf-plan.outcome }} == 'success'
+        run: |
+          terraform apply -auto-approve 
+          echo "::set-output name=ecr_repo::$(terraform output ecr_repo | xargs)"
+          echo "::set-output name=predictions_stream_name::$(terraform output predictions_stream_name | xargs)"
+          echo "::set-output name=model_bucket::$(terraform output model_bucket | xargs)"
+          echo "::set-output name=lambda_function::$(terraform output lambda_function | xargs)"
+
+      # Build-Push
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image-step
+        working-directory: "docker"
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ steps.tf-apply.outputs.ecr_repo }}
+          IMAGE_TAG: "latest"   # ${{ github.sha }}
+        run: |
+          docker build -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=image_uri::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+      # Deploy
+      - name: Get model artifacts
+        id: get-model-artifacts
+        working-directory: "docker"
+        env:
+          MODEL_BUCKET_DEV: "mlopsbucketantihaddock_dev"
+          MODEL_BUCKET_PROD: ${{ steps.tf-apply.outputs.model_bucket }}
+        run: |
+          export RUN_ID=$(aws s3api list-objects-v2 --bucket ${MODEL_BUCKET_DEV} \
+          --query 'sort_by(Contents, &LastModified)[-1].Key' --output=text | cut -f2 -d/)
+          aws s3 sync s3://${MODEL_BUCKET_DEV} s3://${MODEL_BUCKET_PROD}
+          echo "::set-output name=run_id::${RUN_ID}"

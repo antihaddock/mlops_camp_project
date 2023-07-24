@@ -93,9 +93,8 @@ resource "aws_autoscaling_group" "ecs_autoscaling_group" {
 }
 
 # Create S3 bucket
-resource "aws_s3_bucket" "mlopsbucket" {
+resource "aws_s3_bucket" "mlopsbucketantihaddock" {
   bucket = local.bucket_name
-  # Additional bucket configuration options
 }
 
 

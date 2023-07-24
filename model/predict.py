@@ -67,7 +67,7 @@ def run_metrics(df, prediction):
         prediction (_type_): the predictions from the ML model
     """
     calculate_evidently_metrics(df, prediction)
-    check_model_performance()
+    check_model_performance(df, prediction)
 
 
 # The flask app and flask main function

@@ -18,7 +18,7 @@ The data directory contains files used for the model process. `train_data.csv` i
 
 
 # Cloud deployment
-AWS used for deployment of this repo
+AWS used for deployment of this repo. The intended deployment service is AWS Fargate with a URL endpoint as an API for the ML model.
 - A S3 bucket is utilised for storing ML flow artifacts and metrics
 - All elements of the repo are containerized in docker and can be deployed to AWS webservices
 - All up there 6 containers to this repo within the `./docker/docker-compose.yml` to run this repo
@@ -94,3 +94,4 @@ For this repo we have applied the following best practices:
 4. Code format checking utilising code linting
 5. Code linting and formatting is done via the Makefile and pylint + black and isort
 6. Git pre commit hooks used for this repo are found in `pre-commit-config.yml` in `./tests/` subdirectory
+7. CI/CD - code base for a CI/CD pipeline is located in the `.github` subdirectory
